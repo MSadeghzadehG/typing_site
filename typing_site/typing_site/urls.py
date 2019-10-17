@@ -16,14 +16,15 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from test_provider.views import *
+from rest_framework.authtoken.views import obtain_auth_token
 
 
 urlpatterns = [
     path('admin/', admin.site.urls, name='admin'),
-    path('login/', LoginView.as_view(), name='login'),
-    path('logout/', LogoutView.as_view(), name='logout'),
-    path('test/', TestAPI.as_view(), name='test'),
-    path('records/', RecordsList.as_view(), name='records'),
+    path('signup/', UserCreate.as_view(), name='signup'),
+    path('signin/', UserSignIn.as_view(), name='singin'),
+    path('signout/', UserSignOut.as_view(), name='logout'),
     path('users/', UserList.as_view(), name='users'),
-    path('users/<str:username>/', UserList.as_view(), name='users'),
+    # path('users/<str:username>/', UserList.as_view(), name='user'),
+    # path('records/', RecordsList.as_view(), name='records'),
 ]
