@@ -26,5 +26,6 @@ urlpatterns = [
     path('signout/', UserSignOut.as_view(), name='logout'),
     path('users/', UserList.as_view(), name='users'),
     # path('users/<str:username>/', UserList.as_view(), name='user'),
-    # path('records/', RecordsList.as_view(), name='records'),
+    path('records/', Records.as_view(), name='get-records'),
+    path('records/<int:id>', Records.as_view(), name='get-record'),
 ]

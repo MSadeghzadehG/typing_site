@@ -6,44 +6,48 @@ from rest_framework import authentication, permissions
 from django.contrib.auth import authenticate, login, logout
 from .serializers import RecordSerializer, UserSerializer
 from .models import Record, User, TestText
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
-# from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+from rest_framework.permissions import IsAuthenticated
 
 from rest_framework.authtoken.models import Token
 from django.shortcuts import get_object_or_404
-
+from rest_framework.exceptions import NotAcceptable, PermissionDenied, ValidationError
 
 from django.db.models.aggregates import Count
 from random import randint
 
-# Create your views here.
 
-
-# class TestAPI(generics.CreateAPIView):
-#     queryset = Test.objects.all()
-#     serializer_class = TestSerializer
-#     permission_classes = [IsAuthenticated]
-
-#     def post(self, request):
-#         # print(self.random().text)
-#         text = self.random().text
-#         user = request.user
-#         return self.create(request, text=text, user=user)
-    
-#     def random(self):
-#         count = len(TestText.objects.all())
-#         random_index = randint(0, count - 1)
-#         return TestText.objects.all()[random_index]
-
-
-
-class RecordsList(generics.ListCreateAPIView):
-    queryset = Record.objects.all()
+class Records(generics.ListCreateAPIView):
     serializer_class = RecordSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        if self.kwargs:
+            record_id = str(self.kwargs['id'])
+            get_object_or_404(Record, id=record_id)
+            return Record.objects.filter(id=record_id)
+        return Record.objects.all()
 
     def perform_create(self, serializer):
-        return super().perform_create(serializer)
+        if self.kwargs:
+            record_id = str(self.kwargs['id'])
+            record = get_object_or_404(Record, id=record_id)
+            if record.user == self.request.user:
+                if record.speed is None:
+                    print(serializer.validated_data)
+                    if serializer.validated_data.keys() >= {"wrong_keys", "correct_keys", "speed"}:
+                        Record.objects.filter(id=record_id).update(**serializer.validated_data)
+                    else:
+                        raise ValidationError("not enough data")
+                else:
+                    raise NotAcceptable("the record has been saved")
+            else:
+                raise PermissionDenied("the record was created for another user")
+        else:
+            user = self.request.user
+            count = len(TestText.objects.all())
+            random_index = randint(0, count - 1)
+            text = TestText.objects.all()[random_index].text
+            Record.objects.create(user=user, text=text)
 
 
 class UserList(generics.ListAPIView):
@@ -51,6 +55,7 @@ class UserList(generics.ListAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     lookup_field = 'username'
+
 
 class UserCreate(APIView):
 
@@ -61,7 +66,6 @@ class UserCreate(APIView):
             if user:
                 token = Token.objects.create(user=user)
                 json = serializer.data
-                json.pop('password')
                 json['token'] = token.key
                 return Response(json, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

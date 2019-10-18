@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Record, User
+from .models import Record, User, TestText
 from django.contrib.auth import get_user_model
 from rest_framework.validators import UniqueValidator
 
@@ -8,6 +8,7 @@ USER_MODEL = get_user_model()
 
 
 class RecordSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Record
         fields = "__all__"
